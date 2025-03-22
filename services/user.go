@@ -3,11 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
+	"time"
+	"user-srv/config"
 	"user-srv/domain"
 	"user-srv/repositories"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type UserService interface {
@@ -16,14 +19,19 @@ type UserService interface {
 	GetAll(ctx context.Context) ([]domain.User, error)
 	Update(ctx context.Context, user *domain.User) error
 	Delete(ctx context.Context, id int) error
+	Login(ctx context.Context, email, password string) (string, error)
 }
 
 type userService struct {
 	repo repositories.UserRepository
+	cfg  *config.Config
 }
 
 func NewUserService(repo repositories.UserRepository) UserService {
-	return &userService{repo: repo}
+	return &userService{
+		repo: repo,
+		cfg:  config.LoadConfig(),
+	}
 }
 
 func (s *userService) Create(ctx context.Context, user *domain.User) error {
@@ -91,6 +99,35 @@ func (s *userService) Delete(ctx context.Context, id int) error {
 		return errors.New("id must be positive")
 	}
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *userService) Login(ctx context.Context, email, password string) (string, error) {
+	if strings.TrimSpace(email) == "" {
+		return "", errors.New("email cannot be empty")
+	}
+	if strings.TrimSpace(password) == "" {
+		return "", errors.New("password cannot be empty")
+	}
+
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return "", errors.New("invalid email or password")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return "", errors.New("invalid email or password")
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  user.ID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString([]byte(s.cfg.JWTSecret))
+	if err != nil {
+		return "", errors.New("failed to generate token")
+	}
+
+	return tokenString, nil
 }
 
 func hashPassword(password string) (string, error) {

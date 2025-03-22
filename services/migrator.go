@@ -5,10 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"time"
+	"user-srv/config"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 )
@@ -70,9 +69,9 @@ func (m *Migrator) Seed() error {
 	return nil
 }
 
-func ConnectDB(user, password, dbname, host, port string) (*sql.DB, error) {
+func ConnectDB(cfg *config.Config) (*sql.DB, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user, password, host, port, dbname)
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
@@ -84,17 +83,8 @@ func ConnectDB(user, password, dbname, host, port string) (*sql.DB, error) {
 }
 
 func InitDB() *sql.DB {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-
-	db, err := ConnectDB(dbUser, dbPassword, dbName, dbHost, dbPort)
+	cfg := config.LoadConfig()
+	db, err := ConnectDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}

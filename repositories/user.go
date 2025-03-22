@@ -12,6 +12,7 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) error
 	GetByID(ctx context.Context, id int) (*domain.User, error)
+	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetAll(ctx context.Context) ([]domain.User, error)
 	Update(ctx context.Context, user *domain.User) error
 	Delete(ctx context.Context, id int) error
@@ -49,6 +50,22 @@ func (r *userRepository) GetByID(ctx context.Context, id int) (*domain.User, err
 			return nil, fmt.Errorf("user with id %d not found", id)
 		}
 		return nil, fmt.Errorf("failed to get user by id: %v", err)
+	}
+	return user, nil
+}
+
+func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	user := &domain.User{}
+	query := `
+		SELECT id, name, email, password, created_at 
+		FROM users 
+		WHERE email = $1`
+	err := r.db.GetContext(ctx, user, query, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("user with email %s not found", email)
+		}
+		return nil, fmt.Errorf("failed to get user by email: %v", err)
 	}
 	return user, nil
 }
