@@ -50,7 +50,7 @@ func (s *GRPCServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*p
 	}, nil
 }
 
-func (s *GRPCServer) GetAllUsers(ctx context.Context, req *proto.GetAllUsersRequest) (*proto.GetAllUsersResponse, error) {
+func (s *GRPCServer) GetAllUsers(ctx context.Context, _ *proto.GetAllUsersRequest) (*proto.GetAllUsersResponse, error) {
 	users, err := s.service.GetAll(ctx)
 	if err != nil {
 		return nil, err
