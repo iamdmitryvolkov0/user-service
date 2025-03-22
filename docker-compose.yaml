@@ -1,5 +1,30 @@
 services:
+  app:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user-srv
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
   postgres:
+    env_file:
+      - .env
     image: postgres:latest
     container_name: postgres_db
     environment:
@@ -11,25 +36,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: user-srv
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_NAME=database
-    volumes:
-      - .:/app # Монтируем текущую директорию в /app
-    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user" ]
+      interval: 5s
+      retries: 5
 
 volumes:
   postgres_data:
