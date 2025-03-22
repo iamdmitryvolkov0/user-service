@@ -18,7 +18,7 @@ func SetRoutes(userService services.UserService) *chi.Mux {
 	r.Delete("/users/{id}", userHandler.Delete)
 	r.Post("/login", userHandler.Login)
 
-	r.With(handlers.AuthMiddleware).Get("/users/me", userHandler.GetCurrentUser)
+	r.With(userHandler.AuthMiddleware).Get("/users/me", userHandler.GetCurrentUser)
 
 	return r
 }

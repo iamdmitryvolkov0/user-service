@@ -1,0 +1,60 @@
+syntax = "proto3";
+package user;
+option go_package = "./proto";
+
+service UserService {
+  rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  rpc GetUser (GetUserRequest) returns (UserResponse);
+  rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersResponse);
+  rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc GetCurrentUser (GetCurrentUserRequest) returns (UserResponse);
+}
+
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message GetUserRequest {
+  int32 id = 1;
+}
+
+message GetAllUsersRequest {}
+
+message UpdateUserRequest {
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+  string password = 4;
+}
+
+message DeleteUserRequest {
+  int32 id = 1;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message GetCurrentUserRequest {}
+
+message UserResponse {
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+  string created_at = 4;
+}
+
+message GetAllUsersResponse {
+  repeated UserResponse users = 1;
+}
+
+message DeleteUserResponse {}
+
+message LoginResponse {
+  string token = 1;
+}
