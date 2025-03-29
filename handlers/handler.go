@@ -40,6 +40,12 @@ type UserHandler struct {
 	cfg     *config.Config
 }
 
+// @title User Service API
+// @version 1.0
+// @description API for managing users
+// @host localhost:8080
+// @BasePath /api
+
 func NewUserHandler(service services.UserService) *UserHandler {
 	return &UserHandler{
 		service: service,
@@ -47,6 +53,16 @@ func NewUserHandler(service services.UserService) *UserHandler {
 	}
 }
 
+// Create a new user
+// @Summary Create a new user
+// @Description Create a new user with the provided details
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body domain.User true "User data"
+// @Success 201 {object} UserResponse
+// @Failure 400 {object} ErrorResponse
+// @Router /users [post]
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var user domain.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -71,7 +87,17 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+// ByID Get a user by ID
+// @Summary Get user by ID
+// @Description Get user details by their ID
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} UserResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /users/{id} [get]
+func (h *UserHandler) ByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -96,7 +122,15 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+// All Get all users
+// @Summary Get all users
+// @Description Retrieve a list of all users
+// @Tags users
+// @Produce json
+// @Success 200 {array} UserResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /users [get]
+func (h *UserHandler) All(w http.ResponseWriter, r *http.Request) {
 	users, err := h.service.GetAll(context.Background())
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, err.Error())
@@ -117,6 +151,18 @@ func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Update user details
+// @Summary Update user
+// @Description Update details of an existing user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body domain.User true "Updated user data"
+// @Success 200 {object} UserResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /users/{id} [put]
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
@@ -148,6 +194,15 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Delete a user
+// @Summary Delete user
+// @Description Remove a user from the system
+// @Tags users
+// @Param id path int true "User ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /users/{id} [delete]
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
@@ -164,6 +219,17 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Login Authenticate user and get JWT token
+// @Summary User login
+// @Description Authenticate a user and receive a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param login body LoginRequest true "Login credentials"
+// @Success 200 {object} LoginResponse
+// @Failure 401 {object} ErrorResponse "Invalid credentials"
+// @Failure 400 {object} ErrorResponse "Invalid request"
+// @Router /login [post]
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -181,7 +247,17 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(LoginResponse{Token: token})
 }
 
-func (h *UserHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+// CurrentUser Get current user details
+// @Summary Get current user
+// @Description Get details of the current authenticated user
+// @Tags users
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} UserResponse
+// @Failure 401 {object} ErrorResponse "Unauthorized access"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Router /users/me [get]
+func (h *UserHandler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("userID").(float64)
 	if !ok {
 		sendError(w, http.StatusUnauthorized, "Invalid token")
@@ -222,7 +298,7 @@ func (h *UserHandler) AuthMiddleware(next http.Handler) http.Handler {
 		tokenStr := parts[1]
 		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errors.New("Unexpected signing method")
+				return nil, errors.New("unexpected signing method")
 			}
 			return []byte(h.cfg.JWTSecret), nil
 		})
