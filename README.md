@@ -63,17 +63,6 @@ COMPOSE_BAKE=1
 
 ### Running the Application
 
-#### Running Locally
-
-1. Install dependencies:
-    ```sh
-    go mod tidy
-    ```
-2. Start the application:
-    ```sh
-    go run cmd/main.go
-    ```
-
 #### Running with Docker
 
 1. Build and run the Docker container:
